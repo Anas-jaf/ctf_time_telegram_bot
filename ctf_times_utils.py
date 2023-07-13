@@ -1,4 +1,4 @@
-#! /user/bin/python3
+#! /bin/python3
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
@@ -10,37 +10,35 @@ import requests
 import datetime
 import json
 import pytz
+import glob
+
+def count_files():
+    files = glob.glob('./send_folder/*')
+    return files
 
 def create_pdf_from_dictionary_list(output_path, data_list):
     doc = SimpleDocTemplate(output_path, pagesize=A4, topMargin=20)
     styles = getSampleStyleSheet()
     session = requests.Session() 
     flowables = []
-
-    title_style = ParagraphStyle(
-        name='TitleStyle',
-        parent=styles['Normal'],
-        fontName='Helvetica-Bold',
-        fontSize=12
-    )
-
+    
     for item in data_list:
-        title = "<b>TITLE:</b> {}".format(item['title'])
-        organizer = "<b>ORGANIZER: </b> {}".format(item['organizers'][0]['name'])
-        starts_at = "<b>STARTS AT: </b> {}".format(format_time(item['start']))
-        ends_at = "<b>ENDS AT: </b> {}".format(format_time(item['finish']))
-        description = "<b>DESCRIPTION: </b> {}".format(item['description'])
+        title = "<b>TITLE: </b> {}".format(item['title'])
+        organizer = "<b>ORGANIZER:</b> {}".format(item['organizers'][0]['name'])
+        starts_at = "<b>STARTS AT:</b> {}".format(format_time(item['start']))
+        ends_at = "<b>ENDS AT:</b> {}".format(format_time(item['finish']))
+        description = "<b>DESCRIPTION:</b> {}".format(item['description'])
         url_link = '<b>URL LINK:</b> <u><font color="blue"><a href="{}">{}</a></font></u>'.format(item['url'], item['url'])
-        ctf_type = "<b>CTF TYPE:  <b>{}".format(item['format'])
-        participant_number = "<b>PARTICIPANT NUMBER:  <b>{}".format(item['participants'])
-        duration = "<b>DURATION:  <b>{}".format(json.dumps(item['duration']))
+        ctf_type = "<b>CTF TYPE:</b> {}".format(item['format'])
+        participant_number = "<b>PARTICIPANT NUMBER:</b> {}".format(item['participants'])
+        duration = "<b>DURATION:</b> {}".format(json.dumps(item['duration']))
 
-        flowables.append(Paragraph(title, title_style))
+        flowables.append(Paragraph(title, styles['Normal']))
         flowables.append(Paragraph(organizer, styles['Normal']))
         flowables.append(Paragraph(starts_at, styles['Normal']))
         flowables.append(Paragraph(ends_at, styles['Normal']))
         flowables.append(Paragraph(description, styles['Normal']))
-        flowables.append(Paragraph(url_link, styles['Normal'], encoding='utf-8'))
+        flowables.append(Paragraph(url_link, styles['Normal'], encoding='utf-8'))  # Specify encoding for non-ASCII characters
         flowables.append(Paragraph(ctf_type, styles['Normal']))
         flowables.append(Paragraph(participant_number, styles['Normal']))
         flowables.append(Paragraph(duration, styles['Normal']))
@@ -159,7 +157,9 @@ def get_time_stamp():
 
 def main():
     print('starting script')
-    print(get_incomming_events())
+    # Example usage and data
+    output_path = './send_folder/latest_CTF_competetions.pdf'
+    create_pdf_from_dictionary_list(output_path, get_incomming_events())
 
 if __name__ == "__main__":
     main()

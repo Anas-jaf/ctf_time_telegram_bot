@@ -1,12 +1,13 @@
 #! /user/bin/python3
+from keys import token as bot_token
 from telegram import Bot, Update
 from ctf_times_utils import *
 from telegram.ext import *
-from keys import token as bot_token
+from time import *
 import traceback
 import datetime
-from time import *
 import pytz
+import glob
 
 print('Starting up bot...')
 
@@ -16,9 +17,20 @@ group_chat_id ='-1001904108964'
 commands_msg = '''
 /start امر لتشغيل البوت
 /commands الاوامر المتوفرة في البوت
-/upcomming_CTF مسابقات امسك العلم القادمة في الخمس ايام القادمة
+/upcomming مسابقات امسك العلم القادمة في الخمس ايام القادمة
 /help عرض المساعدة 
 '''
+
+def send_pdf_to_group():
+    bot = Bot(token=bot_token)
+    output_path = './send_folder/latest_CTF_competetions.pdf'
+    create_pdf_from_dictionary_list(output_path, get_incomming_events())    
+    files = count_files()
+    send_files(bot , group_chat_id ,files)
+
+def send_files(bot, chat_id, files , outdir='./send_folder',name="ملف مضغوظ"):
+    for file in files:
+        bot.send_document(chat_id=chat_id, document=open(file, 'rb'), timeout=900)
 
 # Log errors
 def error(update, context):
@@ -48,15 +60,18 @@ def send_message(message):
 
 def start_of_day_message():
     message = "Good morning! Have a wonderful day ahead!"
-    send_message(message)
+    # send_message(message)
+    send_pdf_to_group()
 
 def middle_of_day_message():
     message = "Hello! Just a friendly reminder to take a break and relax!"
-    send_message(message)
+    # send_message(message)
+    send_pdf_to_group()
 
 def end_of_day_message():
     message = "Good evening! Hope you had a productive day. Have a restful night!"
-    send_message(message)
+    # send_message(message)
+    send_pdf_to_group()
 
 def start_command(update, context):
     message = "Bot is started. Messages will be sent at specific times."
@@ -72,7 +87,7 @@ def main():
     # Commands
     dp.add_handler(CommandHandler('start', start_command))
     dp.add_handler(CommandHandler('commands', commands))
-    dp.add_handler(CommandHandler('upcomming_CTF', upcomming_CTF))
+    dp.add_handler(CommandHandler('upcomming', upcomming_CTF))
     dp.add_handler(CommandHandler('help', help_command))
 
     # Set the timezone to GMT+03:00
