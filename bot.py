@@ -5,6 +5,7 @@ from telegram.ext import *
 from keys import token as bot_token
 import traceback
 import datetime
+from time import *
 import pytz
 
 print('Starting up bot...')
@@ -29,8 +30,10 @@ def help_command(update, context):
     update.message.reply_text(commands_msg)
 
 def upcomming_CTF(update, context):
-    for event in incomming_events_list_wrapper():
-        update.message.reply_text('\n'.join([part for part in event])) 
+    for counter , event in enumerate(incomming_events_list_wrapper()):
+        if counter % 5 == 0 :
+            sleep(2)
+        update.message.reply_text('\n'.join([part for part in event]) ,timeout=900) 
 
 def commands(update: Update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text=commands_msg)
@@ -38,7 +41,9 @@ def commands(update: Update, context):
 def send_message(message):
     bot = Bot(token=bot_token)
     # bot.send_message(chat_id=group_chat_id, text=message)
-    for event in incomming_events_list_wrapper():
+    for counter , event in enumerate(incomming_events_list_wrapper()):
+        if counter % 3 == 0 :
+            sleep(8)
         bot.send_message(chat_id=group_chat_id, text='\n'.join([part for part in event]) ,timeout=900)
 
 def start_of_day_message():
