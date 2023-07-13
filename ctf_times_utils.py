@@ -11,6 +11,12 @@ import datetime
 import json
 import pytz
 import glob
+import os
+
+def delete_send_folder():
+    files = glob.glob('./send_folder/*')
+    for f in files:
+        os.remove(f)
 
 def count_files():
     files = glob.glob('./send_folder/*')
@@ -21,6 +27,20 @@ def create_pdf_from_dictionary_list(output_path, data_list):
     styles = getSampleStyleSheet()
     session = requests.Session() 
     flowables = []
+
+    title_style = ParagraphStyle(
+        name='TitleStyle',
+        parent=styles['Title'],
+        fontName='Helvetica-Bold',
+        fontSize=24,
+        leading=28,  # Increase the leading (line spacing) for space between lines
+        spaceAfter=0.5 * inch,
+        alignment=1  # Center alignment
+    )
+
+    title_paragraph = Paragraph('CTF Challenges from {} to {}'.format( datetime.date.today() , datetime.date.today()+datetime.timedelta(days=5) ), title_style)
+    flowables.append(title_paragraph)
+    flowables.append(Spacer(1, 0.5 * inch))  # Spacing after the title   
     
     for item in data_list:
         title = "<b>TITLE: </b> {}".format(item['title'])
@@ -66,7 +86,7 @@ def create_pdf_from_dictionary_list(output_path, data_list):
 
 def fetch_image_data(url,session):
     headers = {'User-Agent': 'Mozilla/5.0'}  # Example header
-    response = session.get(url, headers=headers)
+    response = session.get(url, headers=headers,timeout=9000)
     if response.status_code == 200:
         return BytesIO(response.content)
     else:
@@ -90,7 +110,7 @@ def incomming_events_list_wrapper(start_timestamp=None,finish_timestamp=None,lim
                 ] 
                 for i in get_incomming_events(start_timestamp=start_timestamp,finish_timestamp=finish_timestamp,limit=limit,session=session)
             ]
-    
+
 def format_time(time_string):
     # Convert string to datetime object
     datetime_obj = datetime.datetime.fromisoformat(time_string)
@@ -147,7 +167,7 @@ def timestamp_now_and_TillTime(after=5):
     after_after_days = datetime.datetime.now() + datetime.timedelta(days=after)
     after_after_days_timestamp = after_after_days.timestamp()
     
-    return [current_timestamp , after_after_days_timestamp]
+    return [int(current_timestamp) , int(after_after_days_timestamp)]
 
 def get_running_events():
     pass
@@ -156,10 +176,7 @@ def get_time_stamp():
     pass
 
 def main():
-    print('starting script')
-    # Example usage and data
-    output_path = './send_folder/latest_CTF_competetions.pdf'
-    create_pdf_from_dictionary_list(output_path, get_incomming_events())
+    print('starting ctf_times_utils script')
 
 if __name__ == "__main__":
     main()
