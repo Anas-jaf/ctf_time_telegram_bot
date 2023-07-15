@@ -38,12 +38,12 @@ def send_files(bot, chat_id, files , outdir='./send_folder',name="ملف مضغ�
 def error(update, context):
     traceback.print_exc()    
     print(f'Update {update} caused error {context.error}')
-    # if update is not None:
-    #     context.bot.send_message(chat_id=update.effective_chat.id,
-    #                              text=f'ERROR: Update {update} caused error {context.error}')
-    # else:
-    #     # Handle the case when update is None
-    #     print("Error: Update is None.")
+    if update is not None:
+        context.bot.send_message(chat_id=update.effective_chat.id,
+                                 text=f'ERROR: Update {update} caused error {context.error}')
+    else:
+        # Handle the case when update is None
+        print("Error: Update is None.")
 
 # Lets us use the /help command
 def help_command(update, context):
