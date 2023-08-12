@@ -1,9 +1,97 @@
-#! /user/bin/python3
-import requests 
+#! /bin/python3
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import inch
+from PIL import Image as PILImage
 from pprint import pprint
+from io import BytesIO
+import requests 
 import datetime
 import json
 import pytz
+import glob
+import os
+
+def delete_send_folder():
+    files = glob.glob('./send_folder/*')
+    for f in files:
+        os.remove(f)
+
+def count_files():
+    files = glob.glob('./send_folder/*')
+    return files
+
+def create_pdf_from_dictionary_list(output_path, data_list):
+    doc = SimpleDocTemplate(output_path, pagesize=A4, topMargin=20)
+    styles = getSampleStyleSheet()
+    session = requests.Session() 
+    flowables = []
+
+    title_style = ParagraphStyle(
+        name='TitleStyle',
+        parent=styles['Title'],
+        fontName='Helvetica-Bold',
+        fontSize=24,
+        leading=28,  # Increase the leading (line spacing) for space between lines
+        spaceAfter=0.5 * inch,
+        alignment=1  # Center alignment
+    )
+
+    title_paragraph = Paragraph('CTF Challenges from {} to {}'.format( datetime.date.today() , datetime.date.today()+datetime.timedelta(days=5) ), title_style)
+    flowables.append(title_paragraph)
+    flowables.append(Spacer(1, 0.5 * inch))  # Spacing after the title   
+    
+    for item in data_list:
+        title = "<b>TITLE: </b> {}".format(item['title'])
+        organizer = "<b>ORGANIZER:</b> {}".format(item['organizers'][0]['name'])
+        starts_at = "<b>STARTS AT:</b> {}".format(format_time(item['start']))
+        ends_at = "<b>ENDS AT:</b> {}".format(format_time(item['finish']))
+        description = "<b>DESCRIPTION:</b> {}".format(item['description'])
+        url_link = '<b>URL LINK:</b> <u><font color="blue"><a href="{}">{}</a></font></u>'.format(item['url'], item['url'])
+        ctf_type = "<b>CTF TYPE:</b> {}".format(item['format'])
+        participant_number = "<b>PARTICIPANT NUMBER:</b> {}".format(item['participants'])
+        duration = "<b>DURATION:</b> {}".format(json.dumps(item['duration']))
+
+        flowables.append(Paragraph(title, styles['Normal']))
+        flowables.append(Paragraph(organizer, styles['Normal']))
+        flowables.append(Paragraph(starts_at, styles['Normal']))
+        flowables.append(Paragraph(ends_at, styles['Normal']))
+        flowables.append(Paragraph(description, styles['Normal']))
+        flowables.append(Paragraph(url_link, styles['Normal'], encoding='utf-8'))  # Specify encoding for non-ASCII characters
+        flowables.append(Paragraph(ctf_type, styles['Normal']))
+        flowables.append(Paragraph(participant_number, styles['Normal']))
+        flowables.append(Paragraph(duration, styles['Normal']))
+
+        # Add image from URL using PIL and ReportLab
+        try:
+            if item['logo']:
+                img_data = fetch_image_data(item['logo'] , session)
+                if img_data:
+                    img = PILImage.open(img_data)
+                    img_width, img_height = img.size
+                    aspect_ratio = img_height / img_width
+                    max_width = 2 * inch  # Maximum width of the image
+                    image_width = min(max_width, img_width)
+                    image_height = image_width * aspect_ratio
+                    flowables.append(Spacer(1, 0.2 * inch))
+                    flowables.append(Image(img_data, width=image_width, height=image_height))
+                    print("Success retrieving image: ",200 ,item['logo'])
+        except Exception as e:
+            print("Error adding image:", str(e))
+
+        flowables.append(Spacer(1, 0.5 * inch))  # Adjust spacing between entries
+
+    doc.build(flowables)
+
+def fetch_image_data(url,session):
+    headers = {'User-Agent': 'Mozilla/5.0'}  # Example header
+    response = session.get(url, headers=headers,timeout=9000)
+    if response.status_code == 200:
+        return BytesIO(response.content)
+    else:
+        print("Error retrieving image:", response.status_code)
+        return None
 
 def incomming_events_list_wrapper(start_timestamp=None,finish_timestamp=None,limit=100,session=None):
     
@@ -18,10 +106,11 @@ def incomming_events_list_wrapper(start_timestamp=None,finish_timestamp=None,lim
                     "CTF TYPE : " + i['format'],
                     "PARTICIPANT NUMBER : " + str(i['participants']),
                     "DURATION : " +json.dumps(i['duration'])
+                    
                 ] 
                 for i in get_incomming_events(start_timestamp=start_timestamp,finish_timestamp=finish_timestamp,limit=limit,session=session)
             ]
-    
+
 def format_time(time_string):
     # Convert string to datetime object
     datetime_obj = datetime.datetime.fromisoformat(time_string)
@@ -78,7 +167,7 @@ def timestamp_now_and_TillTime(after=5):
     after_after_days = datetime.datetime.now() + datetime.timedelta(days=after)
     after_after_days_timestamp = after_after_days.timestamp()
     
-    return [current_timestamp , after_after_days_timestamp]
+    return [int(current_timestamp) , int(after_after_days_timestamp)]
 
 def get_running_events():
     pass
@@ -87,8 +176,7 @@ def get_time_stamp():
     pass
 
 def main():
-    print('starting script')
-    print(get_incomming_events())
+    print('starting ctf_times_utils script')
 
 if __name__ == "__main__":
     main()
